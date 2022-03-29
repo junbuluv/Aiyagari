@@ -61,21 +61,22 @@ while dif > tol && iter < maxiter
     % using the guess, get the current consumption
     %c0_test = C0(cp_0,r,p_z);
     c0 = ((beta*(1+r)*p_z*cp_0'.^(-gamma)).^(-1/gamma))';
+    
     % get the current asset
     a0 = Amat - w*Zmat + c0;
+
     % how to deal with negative a? When borrowing constraint binds
     ind_bind = a0 < 0;
-    c_bind = ind_bind.*a0*(1+r)+ind_bind.*(w*Zmat);
     %a0 = A0(Amat', Zmat', c0, r, w);
     % If any a0 is negative replace it with a_min
     %a0 = max(a0,a_min);
-    cp_next = zeros(n_a,n_z)+c_bind;
+    cp_next = zeros(n_a,n_z);
     for p = 1:n_z
     cp_next(:,p) = interp1(a0(:,p),c0(:,p),Amat(:,p),'spline');
     end
     
     dif = norm(cp_next - cp_0);
-    if rem(iter,1000) == 0
+    if rem(iter,500) == 0
       fprintf('Inner loop, iteration: %3i, Norm: %2.6f \n',[iter,dif]);
     end
 
@@ -85,6 +86,7 @@ while dif > tol && iter < maxiter
 
 end
     
+Amat = max(a0,0);
 
 
 
