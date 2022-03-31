@@ -63,7 +63,7 @@ maxiter = 100000;
 tic;
 while dif > tol && iter < maxiter
     % using the guess, get the current consumption
-    c0 = ((beta*(1+r)*p_z* (cp_0'.^(-gamma))).^(-1/gamma))';
+    c0 = ((beta*(1+r)*(cp_0.^(-gamma))*p_z).^(-1/gamma));
     % get the current asset
     a0 = (Amat - w*Zmat + c0)/(1+r);
     % how to deal with negative a? When borrowing constraint binds 
@@ -83,9 +83,20 @@ while dif > tol && iter < maxiter
 
     cp_0 = cp_next;
     iter = iter+1;
-    c_new = interp1(Amat(:,1),cp_0,'spline');
 end
     toc
+
+
+a0 = max(a0,0);
+
+% get the policy function
+for e = 1:n_z
+    aux_func(:,e) = interp1(a0(:,e),Amat(:,e),"spline","extrap");
+end
+    policy_func(:,e) = aux_func
+end
+
+
 
 
 Amat_new = (1+r)*Amat_dis + w*Zmat - cp_0;
