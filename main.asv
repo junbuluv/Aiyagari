@@ -59,21 +59,23 @@ iter = 0;
 maxiter = 100000;
 
 
-tic;           
+tic;
 while dif > tol && iter < maxiter
 
     % using the guess, get the current consumption
     c0 = ((beta*(1+r)*(cp_0.^(-gamma))*p_z).^(-1/gamma));
     % get the current asset
-    a0 = (Amat - w*Zmat + c0)/(1+r);   
+    a0 = (Amat - w*Zmat + c0)/(1+r);
     % how to deal with negative a? When borrowing constraint binds 
     % get index for negative asset
+    ind_bind = a0 <= a_min;
+    c_bind = ind_bind.*a0*(1+r)+ind_bind.*(w*Zmat) - a_min;
     %Interpolation to get updated policy function
-    cp_next = zeros(n_a,n_z);
+    cp_next = zeros(n_a,n_z)+c_bind;
     for p = 1:n_z
     cp_next(:,p) = interp1(a0(:,p),c0(:,p),Amat(:,p),'spline');
     end
-    cp_next = max(cp_next,0);
+    
     dif = norm(cp_next - cp_0);
     if rem(iter,1000) == 0
       fprintf('Inner loop, iteration: %3i, Norm: %2.6f \n',[iter,dif]);
@@ -84,15 +86,16 @@ while dif > tol && iter < maxiter
 end
     toc
 
-pol_func = zeros(n_a, n_z);
+
+
 a0 = max(a0,0);
-aux_func = zeros(n_a,n_z);
+
 % get the policy function
 for e = 1:n_z
-    aux_func(:,e) = interp1(a0(:,e),Amat(:,e),"spline");
+    aux_func(:,e) = interp1(a0(:,e),Amat(:,e),"spline","extrap");
 end
-policy_func = aux_func./a0;
-
+    policy_func = aux_func./a0
+end
 
 
 
