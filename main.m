@@ -68,12 +68,16 @@ while dif > tol && iter < maxiter
     a0 = (Amat - w*Zmat + c0)/(1+r);   
     % how to deal with negative a? When borrowing constraint binds 
     % get index for negative asset
+    
+    ind_bind = a0 <= a_min;
+    c_bind = a0*(1+r)+(w*Zmat) - a_min;
     %Interpolation to get updated policy function
-    cp_next = zeros(n_a,n_z);
+    cp_next = zeros(n_a,n_z)+c_bind;
+
     for p = 1:n_z
     cp_next(:,p) = interp1(a0(:,p),c0(:,p),Amat(:,p),'spline');
     end
-    cp_next = max(cp_next,0);
+    
     dif = norm(cp_next - cp_0);
     if rem(iter,1000) == 0
       fprintf('Inner loop, iteration: %3i, Norm: %2.6f \n',[iter,dif]);
@@ -97,9 +101,12 @@ policy_func = aux_func./a0;
 
 
 
-Amat_new = (1+r)*Amat_dis + w*Zmat - cp_0;
-Zmat = repmat(z,1,n_a)';
-Zmat = reshape(Zmat,[3500,1]);
+
+a_prime1 = linspace(a_min,a_max,n_dis);
+
+Amat = repmat(a_prime1,1,n_z)';
+Zmat = repmat(z,1,n_dis)';
+Zmat = reshape(Zmat,[n_dis*n_z,1]);
 Gmat = [Amat, Zmat];
 
 
