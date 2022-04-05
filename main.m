@@ -17,22 +17,6 @@ a_min = 0;
 a_max = 200;
 n_dis = 700;
 
-
-
-
-%% grid
-% asset
-a_prime = linspace(a_min,a_max,n_a)';
-% labor skill shock
-[z, p_z] = mytauchen(0,rho,sigma,n_z);
-% constrcut G_matrix
-z = exp(z);
-Zmat = repmat(z,1,n_a)';
-Amat = repmat(a_prime,1,n_z);
-
-Amat_dis = repmat(a_prime,1,n_z);
-
-
 upper_r = 1/beta - 1;
 lower_r = 0;
 % initial guess r
@@ -41,78 +25,51 @@ r = (upper_r+lower_r)/2;
 r_k = r + delta;
 w = (r_k / alpha)^(alpha/(alpha-1)) * (1-alpha);
 
-%endogenous grid method
 %define marginal utility function 
 up = @(x) (x).^(-gamma);
 inv_up = @(y) y.^(-1/gamma);
-%define Endogenous function
-C0 = @(cp_0,r,pz) inv_up(beta * (1+r) * up(cp_0)*pz');
-A0 = @(A_prime,z,c0,r,w) 1/(1+r)*(c0+A_prime-z.*w);
+
+%% grid
+% asset
+a_prime = linspace(a_min,a_max,n_a)';
+% labor skill shock
+[z, p_z] = mytauchen(0,rho,(sigma^2/(1-rho)),n_z);
+% constrcut G_matrix
+z = exp(z);
+ap_endo = zeros(n_a,n_z);
 
 
-% note Amat is a_prime
-% initial guess for c_prime
-cp_0 = (r)*Amat + w*Zmat ;
+Zmat = repmat(z,1,n_a)'; % z matrix 500 x 7 (z1,z2,...z7 columns)
+A_pZmat = meshgrid(a_prime,z)'; % meshgrid of a' and z
+
+criter = 1e-9;
 dif = Inf;
-tol = 1e-7;
+
+M_f = (1+r)*A_pZmat + w * Zmat; % total available resource
+c_0 = M_f - A_pZmat; % initial guess of consumption 
+env_old = (1+r)*c_0.^(-gamma); % initial guess of envelope condition
 iter = 0;
-maxiter = 100000;
-
-
-tic;           
-while dif > tol && iter < maxiter
-
-    % using the guess, get the current consumption
-    c0 = ((beta*(1+r)*(cp_0.^(-gamma))*p_z).^(-1/gamma));
-    % get the current asset
-    a0 = (Amat - w*Zmat + c0)/(1+r);   
-    % how to deal with negative a? When borrowing constraint binds 
-    % get index for negative asset
-    
-    ind_bind = a0 <= a_min;
-    c_bind = a0*(1+r)+(w*Zmat) - a_min;
-    %Interpolation to get updated policy function
-    cp_next = zeros(n_a,n_z)+c_bind;
-
-    for p = 1:n_z
-    cp_next(:,p) = interp1(a0(:,p),c0(:,p),Amat(:,p),'spline');
-    end
-    
-    dif = norm(cp_next - cp_0);
-    if rem(iter,1000) == 0
+while dif > criter
+c_g = (beta* env_old*p_z).^(-1/gamma); %c_g choice
+M_g = c_g + A_pZmat; % market resource choice
+a_endo = (M_g - w* Zmat)./(1+r); % a_endogenous grid
+% ap_endogenous using interpolation sample point(M_g), Query point(M_f) and function (A_prime)
+for i = 1:n_z
+ap_endo(:,i) = max(0,interp1(M_g(:,i),A_pZmat(:,i),M_f(:,i),"spline"));
+end
+% get c_endogenous (updated c_current)
+c_endo = M_f - ap_endo;
+% get new envelope condition
+env_new = (1+r)*c_endo.^(-gamma);
+dif = norm(env_old - env_new);
+    if rem(iter,500) == 0
       fprintf('Inner loop, iteration: %3i, Norm: %2.6f \n',[iter,dif]);
     end
-
-    cp_0 = cp_next;
-    iter = iter+1;
+    iter = iter +1;
+env_old = env_new;
 end
-    toc
-
-pol_func = zeros(n_a, n_z);
-a0 = max(a0,0);
-aux_func = zeros(n_a,n_z);
-% get the policy function
-for e = 1:n_z
-    aux_func(:,e) = interp1(a0(:,e),Amat(:,e),"spline");
-end
-policy_func = aux_func./a0;
 
 
 
-
-
-
-a_prime1 = linspace(a_min,a_max,n_dis);
-
-Amat = repmat(a_prime1,1,n_z)';
-Zmat = repmat(z,1,n_dis)';
-Zmat = reshape(Zmat,[n_dis*n_z,1]);
-Gmat = [Amat, Zmat];
-
-
-
-
-
-
-
+closest_value_and_index(ap_endo,2)
 
