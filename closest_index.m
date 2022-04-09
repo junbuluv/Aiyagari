@@ -1,5 +1,6 @@
 function val =  closest_index(a,x)
 
+
 if isempty(a) == true
     error("xGrid is empty in function closest_index.")
 end
@@ -7,7 +8,7 @@ if isnan(a) == true
     error("xGrid is Nan")
 end
 
-idx = find(a,x,"first");
+idx =interp1(a,a,x,"previous");
 if idx == 1
     val = idx;
 end
