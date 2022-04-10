@@ -125,15 +125,25 @@ end
 end
 end
 
+P_a = sparse(P_a);
+
+tol_mu = 10e-6;
+dif_mu =Inf;
+mu_init = rand(n_z*n_dis,1)./n_dis;
 
 
-mu_init = ones(n_z*n_dis,1)./n_dis;
+while dif_mu > tol_mu
+    mu_ap = P_a * mu_init ;
+    mu_ap = reshape(mu_ap,[n_dis, n_z]);
+    mu_apz = mu_ap*p_z';
 
+    mu_update = reshape(mu_apz, [n_z*n_dis, 1]);
 
-
+    dif_mu=norm(mu_init-mu_update,Inf)
+    mu_init =mu_update;
+end
 
     
-
 
 
 
