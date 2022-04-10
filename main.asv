@@ -31,18 +31,14 @@ Zmat = repmat(z,1,n_a)'; % z matrix 500 x 7 (z1,z2,...z7 columns)
 A_pZmat = meshgrid(a_prime,z)'; % meshgrid of a' and z
 r = (upper_r+lower_r)/2;
 bisection_iter = 0;
-lss=exp((0.5*sigma^2)/(1.0-rho^2));
 
 %% Loop start (Bisection)
 while bisection_dif > bisection_tol 
 
 % recover capital rental rate and wage
 r_k = r + delta;
-%k_d =((r_k)/alpha)^(1/(alpha-1));
-k_d =((r_k*lss^(alpha-1.0))/alpha)^(1/(alpha-1));
-w=(1-alpha)*k_d^alpha*lss^(-alpha);
-
-%w = (r_k / alpha)^(alpha/(alpha-1)) * (1-alpha);
+k_d =((r_k)/alpha)^(1/(alpha-1));
+w = (r_k / alpha)^(alpha/(alpha-1)) * (1-alpha);
 
 % EGM initialization
 M_f = (1+r)*A_pZmat + w * Zmat; % total available resource
@@ -142,7 +138,7 @@ while dif_mu > tol_mu
   mu_update = reshape(mu_ap_zp, [n_dis*n_z, 1]);
   
   dif_mu=norm(mu_init-mu_update,Inf);
-  if rem(mu_iter,500) ==0
+  if rem(mu_iter,500)
       fprintf('mu convergence, iteration: %3i, Norm: %2.6f \n',[mu_iter,dif_mu]);
   end
         mu_init(:,:)=mu_update;
@@ -218,19 +214,3 @@ legend ('C_1', 'C_2', 'C_3', 'C_4', 'C_5', 'C_6', 'C_7','Location','northwest')
 %Plotting the stationary distribution of assets
 asset_dist = Amat_dis.*mu_init;
 histogram(asset_dist, 100)
-
-
-histrange=40;
-histgraph=zeros(histrange,1);
-for histg=1:n_dis*n_z
-    for histgr=1:histrange
-        if a_max/histrange*(histgr-1)<=ap_grid(histg)&& ap_grid(histg)<a_max/histrange*(histgr)
-            histgraph(histgr,1)=histgraph(histgr,1)+mu_update(histg,1);
-        end
-    end
-end
-histgraph=histgraph/7;
-
-xaxis=linspace(a_min,a_max,histrange)
-bar(xaxis,histgraph,1),xlabel('asset'),ylabel('probability')
-title('asset distribution')
